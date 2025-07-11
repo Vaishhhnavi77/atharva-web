@@ -1,3 +1,4 @@
+
 import { Phone, Mail, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,14 +33,40 @@ const Contact = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
-  const sendOTPEmail = (email: string, otpCode: string) => {
-    // In a real implementation, you would send an actual email with the OTP
-    // For now, we'll simulate the OTP sending via toast
-    console.log(`Sending OTP ${otpCode} to email ${email}`);
-    toast({
-      title: "OTP Sent to Email!",
-      description: `Verification code sent to ${email}. Demo OTP: ${otpCode}`,
-    });
+  const sendOTPEmail = async (email: string, otpCode: string) => {
+    try {
+      // Call Supabase Edge Function to send email
+      const { error } = await supabase.functions.invoke('send-otp-email', {
+        body: {
+          email: email,
+          otp: otpCode,
+          name: formData.fullName
+        }
+      });
+
+      if (error) {
+        console.error('Error sending OTP email:', error);
+        // Fallback to console log for now
+        console.log(`OTP for ${email}: ${otpCode}`);
+        toast({
+          title: "OTP Generated",
+          description: `Verification code generated. Check console for OTP: ${otpCode}`,
+        });
+      } else {
+        toast({
+          title: "OTP Sent!",
+          description: `Verification code sent to ${email}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      // Fallback - log OTP to console
+      console.log(`OTP for ${email}: ${otpCode}`);
+      toast({
+        title: "OTP Generated",
+        description: `Verification code generated. Check console for OTP: ${otpCode}`,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,7 +105,7 @@ const Contact = () => {
       // Generate and send OTP via email
       const otpCode = generateOTP();
       setGeneratedOTP(otpCode);
-      sendOTPEmail(formData.email, otpCode);
+      await sendOTPEmail(formData.email, otpCode);
       
       // Show OTP verification form
       setShowOTPVerification(true);
@@ -188,10 +215,10 @@ const Contact = () => {
     }
   };
 
-  const resendOTP = () => {
+  const resendOTP = async () => {
     const newOTP = generateOTP();
     setGeneratedOTP(newOTP);
-    sendOTPEmail(formData.email, newOTP);
+    await sendOTPEmail(formData.email, newOTP);
     setOtp('');
   };
 
@@ -208,9 +235,6 @@ const Contact = () => {
                   We've sent a 6-digit verification code to
                 </p>
                 <p className="text-white font-semibold">{formData.email}</p>
-                <p className="text-sm text-slate-400 mt-2">
-                  Demo Mode: Check the toast message for OTP
-                </p>
               </div>
 
               <div className="space-y-6">
@@ -342,11 +366,6 @@ const Contact = () => {
 
           <div className="bg-slate-800/30 p-8 rounded-2xl border border-slate-700">
             <h3 className="text-2xl font-bold text-white mb-6">Enrollment Form</h3>
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
-              <p className="text-yellow-400 text-sm">
-                <strong>Note:</strong> Email signups are currently disabled. Your enrollment will be saved and our admin team will contact you to activate your account.
-              </p>
-            </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
