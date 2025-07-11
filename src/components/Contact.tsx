@@ -32,13 +32,13 @@ const Contact = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
-  const sendOTP = (phoneNumber: string, otpCode: string) => {
-    // In a real implementation, you would integrate with an SMS service like Twilio
-    // For now, we'll simulate the OTP sending
-    console.log(`Sending OTP ${otpCode} to ${phoneNumber}`);
+  const sendOTPEmail = (email: string, otpCode: string) => {
+    // In a real implementation, you would send an actual email with the OTP
+    // For now, we'll simulate the OTP sending via toast
+    console.log(`Sending OTP ${otpCode} to email ${email}`);
     toast({
-      title: "OTP Sent!",
-      description: `Verification code sent to ${phoneNumber}. Demo OTP: ${otpCode}`,
+      title: "OTP Sent to Email!",
+      description: `Verification code sent to ${email}. Demo OTP: ${otpCode}`,
     });
   };
 
@@ -75,17 +75,17 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      // Generate and send OTP
+      // Generate and send OTP via email
       const otpCode = generateOTP();
       setGeneratedOTP(otpCode);
-      sendOTP(formData.phone, otpCode);
+      sendOTPEmail(formData.email, otpCode);
       
       // Show OTP verification form
       setShowOTPVerification(true);
       
       toast({
-        title: "Verification Required",
-        description: "Please enter the OTP sent to your phone number",
+        title: "Email Verification Required",
+        description: "Please enter the OTP sent to your email address",
       });
     } catch (error) {
       console.error('Error:', error);
@@ -191,7 +191,7 @@ const Contact = () => {
   const resendOTP = () => {
     const newOTP = generateOTP();
     setGeneratedOTP(newOTP);
-    sendOTP(formData.phone, newOTP);
+    sendOTPEmail(formData.email, newOTP);
     setOtp('');
   };
 
@@ -201,13 +201,13 @@ const Contact = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-md mx-auto">
             <div className="bg-slate-800/30 p-8 rounded-2xl border border-slate-700">
-              <h3 className="text-2xl font-bold text-white mb-6 text-center">Verify Phone Number</h3>
+              <h3 className="text-2xl font-bold text-white mb-6 text-center">Verify Email Address</h3>
               
               <div className="text-center mb-6">
                 <p className="text-slate-300 mb-4">
                   We've sent a 6-digit verification code to
                 </p>
-                <p className="text-white font-semibold">{formData.phone}</p>
+                <p className="text-white font-semibold">{formData.email}</p>
                 <p className="text-sm text-slate-400 mt-2">
                   Demo Mode: Check the toast message for OTP
                 </p>
