@@ -3,15 +3,22 @@ import { Phone, Mail, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
-    courseInterest: ''
+    courseInterest: '',
+    password: '',
+    confirmPassword: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [generatedOTP, setGeneratedOTP] = useState('');
+  const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
   const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -22,10 +29,23 @@ const Contact = () => {
     }));
   };
 
+  const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
+  const sendOTP = (phoneNumber: string, otpCode: string) => {
+    // Simulate sending OTP - in real implementation, you'd use SMS service
+    console.log(`Sending OTP ${otpCode} to ${phoneNumber}`);
+    toast({
+      title: "OTP Sent!",
+      description: `Verification code sent to ${phoneNumber}. For demo: ${otpCode}`,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.courseInterest) {
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.courseInterest || !formData.password) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -34,10 +54,66 @@ const Contact = () => {
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
+      // Generate and send OTP
+      const otpCode = generateOTP();
+      setGeneratedOTP(otpCode);
+      sendOTP(formData.phone, otpCode);
+      
+      // Show OTP verification form
+      setShowOTPVerification(true);
+      
+      toast({
+        title: "Verification Required",
+        description: "Please enter the OTP sent to your phone number",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process enrollment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOTPVerification = async () => {
+    if (otp !== generatedOTP) {
+      toast({
+        title: "Error",
+        description: "Invalid OTP. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsVerifyingOTP(true);
+
+    try {
+      // First, insert enrollment data
+      const { error: enrollmentError } = await supabase
         .from('enrollments')
         .insert({
           full_name: formData.fullName,
@@ -46,38 +122,135 @@ const Contact = () => {
           course_interest: formData.courseInterest
         });
 
-      if (error) {
-        console.error('Error submitting enrollment:', error);
-        toast({
-          title: "Error",
-          description: "Failed to submit enrollment. Please try again.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Success!",
-          description: "Your enrollment has been submitted successfully. We'll contact you soon!",
-        });
-        
-        // Reset form
-        setFormData({
-          fullName: '',
-          email: '',
-          phone: '',
-          courseInterest: ''
-        });
+      if (enrollmentError) {
+        throw enrollmentError;
       }
-    } catch (error) {
-      console.error('Unexpected error:', error);
+
+      // Then create user account
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: formData.fullName,
+            phone: formData.phone,
+            course_interest: formData.courseInterest
+          }
+        }
+      });
+
+      if (signUpError) {
+        throw signUpError;
+      }
+
+      toast({
+        title: "Success!",
+        description: "Account created successfully! Please check your email to confirm your account.",
+      });
+      
+      // Reset form and hide OTP verification
+      setFormData({
+        fullName: '',
+        email: '',
+        phone: '',
+        courseInterest: '',
+        password: '',
+        confirmPassword: ''
+      });
+      setOtp('');
+      setShowOTPVerification(false);
+      setGeneratedOTP('');
+
+      // Redirect to auth page after a short delay
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Error completing enrollment:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: error.message || "Failed to complete enrollment. Please try again.",
         variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
+      setIsVerifyingOTP(false);
     }
   };
+
+  const resendOTP = () => {
+    const newOTP = generateOTP();
+    setGeneratedOTP(newOTP);
+    sendOTP(formData.phone, newOTP);
+    setOtp('');
+  };
+
+  if (showOTPVerification) {
+    return (
+      <section id="contact" className="py-20 bg-slate-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-md mx-auto">
+            <div className="bg-slate-800/30 p-8 rounded-2xl border border-slate-700">
+              <h3 className="text-2xl font-bold text-white mb-6 text-center">Verify Phone Number</h3>
+              
+              <div className="text-center mb-6">
+                <p className="text-slate-300 mb-4">
+                  We've sent a 6-digit verification code to
+                </p>
+                <p className="text-white font-semibold">{formData.phone}</p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={(value) => setOtp(value)}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+
+                <button
+                  onClick={handleOTPVerification}
+                  disabled={otp.length !== 6 || isVerifyingOTP}
+                  className="w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isVerifyingOTP ? 'Verifying...' : 'Verify & Complete Enrollment'}
+                </button>
+
+                <div className="text-center">
+                  <button
+                    onClick={resendOTP}
+                    className="text-blue-400 hover:text-blue-300 text-sm underline"
+                  >
+                    Resend OTP
+                  </button>
+                </div>
+
+                <div className="text-center">
+                  <button
+                    onClick={() => setShowOTPVerification(false)}
+                    className="text-slate-400 hover:text-slate-300 text-sm"
+                  >
+                    Back to form
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="contact" className="py-20 bg-slate-900/50">
@@ -156,7 +329,7 @@ const Contact = () => {
           </div>
 
           <div className="bg-slate-800/30 p-8 rounded-2xl border border-slate-700">
-            <h3 className="text-2xl font-bold text-white mb-6">Enrollment Form</h3>
+            <h3 className="text-2xl font-bold text-white mb-6">Enrollment & Account Creation</h3>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -220,15 +393,57 @@ const Contact = () => {
                   <option value="Java Programming">Java Programming</option>
                 </select>
               </div>
+
+              <div className="border-t border-slate-600 pt-6 mt-6">
+                <h4 className="text-lg font-semibold text-white mb-4">Create Your Account</h4>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-slate-300 mb-2">Create Password</label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-blue-500 focus:outline-none transition-colors"
+                      placeholder="Create a password (min. 6 characters)"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-slate-300 mb-2">Confirm Password</label>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-blue-500 focus:outline-none transition-colors"
+                      placeholder="Confirm your password"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
               
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Submitting...' : 'Enroll Now'}
+                {isSubmitting ? 'Processing...' : 'Create Account & Enroll'}
               </button>
             </form>
+
+            <div className="mt-4 text-center">
+              <p className="text-slate-400 text-sm">
+                Already have an account?{' '}
+                <a href="/auth" className="text-blue-400 hover:text-blue-300 underline">
+                  Sign in here
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </div>
