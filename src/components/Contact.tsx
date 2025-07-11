@@ -1,4 +1,3 @@
-
 import { Phone, Mail, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,11 +33,12 @@ const Contact = () => {
   };
 
   const sendOTP = (phoneNumber: string, otpCode: string) => {
-    // Simulate sending OTP - in real implementation, you'd use SMS service
+    // In a real implementation, you would integrate with an SMS service like Twilio
+    // For now, we'll simulate the OTP sending
     console.log(`Sending OTP ${otpCode} to ${phoneNumber}`);
     toast({
       title: "OTP Sent!",
-      description: `Verification code sent to ${phoneNumber}. For demo: ${otpCode}`,
+      description: `Verification code sent to ${phoneNumber}. Demo OTP: ${otpCode}`,
     });
   };
 
@@ -126,27 +126,11 @@ const Contact = () => {
         throw enrollmentError;
       }
 
-      // Then create user account
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: formData.fullName,
-            phone: formData.phone,
-            course_interest: formData.courseInterest
-          }
-        }
-      });
-
-      if (signUpError) {
-        throw signUpError;
-      }
-
+      // Since email signups are disabled, we'll create a temporary workaround
+      // Instead of creating a Supabase auth user, we'll just complete the enrollment
       toast({
-        title: "Success!",
-        description: "Account created successfully! Please check your email to confirm your account.",
+        title: "Enrollment Successful!",
+        description: "Your enrollment has been submitted successfully. You can now sign in using the Auth page with your credentials once our admin enables your account.",
       });
       
       // Reset form and hide OTP verification
@@ -162,18 +146,43 @@ const Contact = () => {
       setShowOTPVerification(false);
       setGeneratedOTP('');
 
-      // Redirect to auth page after a short delay
+      // Show additional instructions
       setTimeout(() => {
-        window.location.href = '/auth';
+        toast({
+          title: "Next Steps",
+          description: "Please contact our admin team to activate your account. Your enrollment details have been saved.",
+        });
       }, 2000);
 
     } catch (error: any) {
       console.error('Error completing enrollment:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to complete enrollment. Please try again.",
-        variant: "destructive"
-      });
+      
+      // Handle specific Supabase auth errors
+      if (error.message?.includes('email_provider_disabled') || error.message?.includes('Email signups are disabled')) {
+        toast({
+          title: "Enrollment Completed",
+          description: "Your enrollment has been saved. Please contact our admin team to activate your account as email signups are currently disabled.",
+        });
+        
+        // Reset form as enrollment was still successful
+        setFormData({
+          fullName: '',
+          email: '',
+          phone: '',
+          courseInterest: '',
+          password: '',
+          confirmPassword: ''
+        });
+        setOtp('');
+        setShowOTPVerification(false);
+        setGeneratedOTP('');
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to complete enrollment. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsVerifyingOTP(false);
     }
@@ -199,6 +208,9 @@ const Contact = () => {
                   We've sent a 6-digit verification code to
                 </p>
                 <p className="text-white font-semibold">{formData.phone}</p>
+                <p className="text-sm text-slate-400 mt-2">
+                  Demo Mode: Check the toast message for OTP
+                </p>
               </div>
 
               <div className="space-y-6">
@@ -329,7 +341,12 @@ const Contact = () => {
           </div>
 
           <div className="bg-slate-800/30 p-8 rounded-2xl border border-slate-700">
-            <h3 className="text-2xl font-bold text-white mb-6">Enrollment & Account Creation</h3>
+            <h3 className="text-2xl font-bold text-white mb-6">Enrollment Form</h3>
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+              <p className="text-yellow-400 text-sm">
+                <strong>Note:</strong> Email signups are currently disabled. Your enrollment will be saved and our admin team will contact you to activate your account.
+              </p>
+            </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -359,7 +376,7 @@ const Contact = () => {
               </div>
               
               <div>
-                <label className="block text-slate-300 mb-2">Phone</label>
+                <label className="block text-slate-300 mb-2">Phone Number</label>
                 <input
                   type="tel"
                   name="phone"
@@ -395,7 +412,7 @@ const Contact = () => {
               </div>
 
               <div className="border-t border-slate-600 pt-6 mt-6">
-                <h4 className="text-lg font-semibold text-white mb-4">Create Your Account</h4>
+                <h4 className="text-lg font-semibold text-white mb-4">Set Your Password</h4>
                 
                 <div className="space-y-4">
                   <div>
@@ -432,13 +449,13 @@ const Contact = () => {
                 disabled={isSubmitting}
                 className="w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Processing...' : 'Create Account & Enroll'}
+                {isSubmitting ? 'Processing...' : 'Submit Enrollment'}
               </button>
             </form>
 
             <div className="mt-4 text-center">
               <p className="text-slate-400 text-sm">
-                Already have an account?{' '}
+                Already enrolled?{' '}
                 <a href="/auth" className="text-blue-400 hover:text-blue-300 underline">
                   Sign in here
                 </a>
