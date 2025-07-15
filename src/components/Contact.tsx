@@ -138,7 +138,24 @@ const Contact = () => {
     setIsVerifyingOTP(true);
 
     try {
-      // First, create the Supabase auth user
+      // First, insert enrollment data
+      const { error: enrollmentError } = await supabase
+        .from('enrollments')
+        .insert({
+          full_name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          course_interest: formData.courseInterest
+        });
+
+      if (enrollmentError) {
+        console.error('Enrollment error:', enrollmentError);
+        throw new Error('Failed to save enrollment data');
+      }
+
+      console.log('Enrollment data saved successfully');
+
+      // Then, create the Supabase auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -156,7 +173,7 @@ const Contact = () => {
 
       console.log('Auth user created:', authData);
 
-      // Ensure profile is created with full_name
+      // Ensure profile is created with full_name - this is critical for reviews
       if (authData.user) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -171,21 +188,6 @@ const Contact = () => {
         } else {
           console.log('Profile created successfully with full_name:', formData.fullName);
         }
-      }
-
-      // Then insert enrollment data
-      const { error: enrollmentError } = await supabase
-        .from('enrollments')
-        .insert({
-          full_name: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
-          course_interest: formData.courseInterest
-        });
-
-      if (enrollmentError) {
-        console.error('Enrollment error (non-blocking):', enrollmentError);
-        // Don't throw here - auth user creation is more important
       }
 
       toast({

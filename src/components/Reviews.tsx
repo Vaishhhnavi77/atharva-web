@@ -57,6 +57,50 @@ const Reviews = () => {
     fetchReviews();
   }, []);
 
+  const getUserFullName = async (): Promise<string> => {
+    if (!user) return 'Anonymous';
+
+    try {
+      // First try to get full name from enrollments table using email
+      const { data: enrollment, error: enrollmentError } = await supabase
+        .from('enrollments')
+        .select('full_name')
+        .eq('email', user.email)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!enrollmentError && enrollment?.full_name) {
+        console.log('Found name from enrollments:', enrollment.full_name);
+        return enrollment.full_name;
+      }
+
+      // Then try from profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!profileError && profile?.full_name) {
+        console.log('Found name from profiles:', profile.full_name);
+        return profile.full_name;
+      }
+
+      // Last resort: try from user metadata
+      if (user.user_metadata?.full_name) {
+        console.log('Found name from user metadata:', user.user_metadata.full_name);
+        return user.user_metadata.full_name;
+      }
+
+      console.log('No full name found, using Anonymous');
+      return 'Anonymous';
+    } catch (error) {
+      console.error('Error getting user full name:', error);
+      return 'Anonymous';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -81,39 +125,8 @@ const Reviews = () => {
     setSubmitting(true);
 
     try {
-      // Get user's full name from multiple sources
-      let fullName = 'User';
-
-      // First try to get from profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
-
-      if (profile?.full_name) {
-        fullName = profile.full_name;
-      } else {
-        // If no profile, try from user metadata
-        if (user.user_metadata?.full_name) {
-          fullName = user.user_metadata.full_name;
-        } else {
-          // Last resort: try from enrollments table using email
-          const { data: enrollment } = await supabase
-            .from('enrollments')
-            .select('full_name')
-            .eq('email', user.email)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-
-          if (enrollment?.full_name) {
-            fullName = enrollment.full_name;
-          }
-        }
-      }
-
-      console.log('Using full name for review:', fullName);
+      const fullName = await getUserFullName();
+      console.log('Submitting review with full name:', fullName);
 
       const { error } = await supabase
         .from('reviews')

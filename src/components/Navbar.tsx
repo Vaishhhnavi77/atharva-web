@@ -1,12 +1,68 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, User, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [userName, setUserName] = useState<string>('');
   const { user, signOut, isAuthenticated } = useAuth();
+
+  // Get user's full name for display
+  useEffect(() => {
+    const getUserName = async () => {
+      if (!user) {
+        setUserName('');
+        return;
+      }
+
+      try {
+        // First try to get from enrollments table using email
+        const { data: enrollment } = await supabase
+          .from('enrollments')
+          .select('full_name')
+          .eq('email', user.email)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (enrollment?.full_name) {
+          setUserName(enrollment.full_name);
+          return;
+        }
+
+        // Then try from profiles table
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profile?.full_name) {
+          setUserName(profile.full_name);
+          return;
+        }
+
+        // Last resort: try from user metadata
+        if (user.user_metadata?.full_name) {
+          setUserName(user.user_metadata.full_name);
+          return;
+        }
+
+        // Fallback to email username
+        setUserName(user.email?.split('@')[0] || 'User');
+      } catch (error) {
+        console.error('Error getting user name:', error);
+        setUserName(user.email?.split('@')[0] || 'User');
+      }
+    };
+
+    if (isAuthenticated) {
+      getUserName();
+    }
+  }, [user, isAuthenticated]);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -73,7 +129,7 @@ const Navbar = () => {
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2 text-slate-300">
                   <User className="w-4 h-4" />
-                  <span className="text-sm">Welcome!</span>
+                  <span className="text-sm">Welcome, {userName}!</span>
                 </div>
                 <Button
                   onClick={signOut}
@@ -145,7 +201,7 @@ const Navbar = () => {
                 {isAuthenticated ? (
                   <div className="space-y-2">
                     <div className="px-3 py-2 text-slate-300 text-sm">
-                      Welcome back!
+                      Welcome, {userName}!
                     </div>
                     <Button
                       onClick={signOut}
