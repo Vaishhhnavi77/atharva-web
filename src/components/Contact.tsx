@@ -45,21 +45,26 @@ const Contact = () => {
       if (error) {
         console.error('Error sending OTP email:', error);
         toast({
-          title: "OTP Generated",
-          description: `Verification code generated. Check console for OTP: ${otpCode}`,
+          title: "OTP Email Error",
+          description: "Failed to send OTP email. Please try again or contact support.",
+          variant: "destructive",
         });
+        return false;
       } else {
         toast({
           title: "OTP Sent!",
           description: `Verification code sent to ${email}`,
         });
+        return true;
       }
     } catch (error) {
       console.error('Error sending OTP:', error);
       toast({
-        title: "OTP Generated",
-        description: `Verification code generated. Check console for OTP: ${otpCode}`,
+        title: "OTP Email Error",
+        description: "Failed to send OTP email. Please try again or contact support.",
+        variant: "destructive",
       });
+      return false;
     }
   };
 
@@ -101,13 +106,22 @@ const Contact = () => {
         .from('enrollments')
         .select('email')
         .eq('email', formData.email)
-        .single();
+        .maybeSingle();
 
       if (existingEnrollment) {
         toast({
           title: "Already Enrolled",
-          description: "This email is already registered. You can now sign in using the Auth page.",
+          description: "This email is already registered. You can create your account on the Auth page.",
         });
+        
+        // Show guidance toast after 2 seconds
+        setTimeout(() => {
+          toast({
+            title: "Next Step",
+            description: "Click the button below to go to the Auth page and create your account.",
+          });
+        }, 2000);
+        
         setIsSubmitting(false);
         return;
       }
@@ -115,7 +129,12 @@ const Contact = () => {
       // Generate and send OTP via email
       const otpCode = generateOTP();
       setGeneratedOTP(otpCode);
-      await sendOTPEmail(formData.email, otpCode);
+      
+      const emailSent = await sendOTPEmail(formData.email, otpCode);
+      if (!emailSent) {
+        setIsSubmitting(false);
+        return;
+      }
       
       // Show OTP verification form
       setShowOTPVerification(true);
@@ -165,7 +184,7 @@ const Contact = () => {
 
       toast({
         title: "Enrollment Successful!",
-        description: "Your enrollment has been completed successfully. You can now create an account on the Auth page.",
+        description: "Your enrollment has been completed successfully.",
       });
       
       // Reset form and hide OTP verification
@@ -181,11 +200,11 @@ const Contact = () => {
       setShowOTPVerification(false);
       setGeneratedOTP('');
 
-      // Show additional instructions
+      // Show next steps guidance
       setTimeout(() => {
         toast({
-          title: "Next Steps",
-          description: "Visit the Auth page to create your account and start learning!",
+          title: "Create Your Account",
+          description: "Now go to the Auth page to create your account and start learning!",
         });
       }, 2000);
 
@@ -458,13 +477,21 @@ const Contact = () => {
               </button>
             </form>
 
-            <div className="mt-4 text-center">
+            <div className="mt-6 text-center space-y-2">
               <p className="text-slate-400 text-sm">
                 Already enrolled?{' '}
                 <a href="/auth" className="text-blue-400 hover:text-blue-300 underline">
-                  Sign in here
+                  Create your account here
                 </a>
               </p>
+              <div className="mt-4">
+                <a 
+                  href="/auth" 
+                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105"
+                >
+                  Go to Auth Page
+                </a>
+              </div>
             </div>
           </div>
         </div>

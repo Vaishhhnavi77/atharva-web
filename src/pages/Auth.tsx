@@ -41,10 +41,10 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Check if user already exists in enrollments
+      // First check if user exists in enrollments
       const { data: existingEnrollment } = await supabase
         .from('enrollments')
-        .select('email')
+        .select('email, full_name')
         .eq('email', email)
         .single();
 
@@ -58,13 +58,14 @@ const Auth = () => {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({
+      // Try to create the account
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: fullName,
+            full_name: fullName || existingEnrollment.full_name,
           }
         }
       });
@@ -77,21 +78,35 @@ const Auth = () => {
             variant: "destructive",
           });
           setIsLogin(true);
-        } else if (error.message.includes('email_provider_disabled') || error.message.includes('Email signups are disabled')) {
+        } else if (error.message.includes('Signups not allowed')) {
+          // Handle case where signups are disabled
           toast({
-            title: "Account Creation Pending",
-            description: "Your enrollment has been received. Please contact our admin team to activate your account as email signups are currently disabled.",
+            title: "Account Creation Disabled",
+            description: "Account creation is currently disabled. Please contact our admin team for assistance.",
+            variant: "destructive",
           });
         } else {
-          throw error;
+          toast({
+            title: "Signup Error",
+            description: error.message,
+            variant: "destructive",
+          });
         }
-      } else {
-        toast({
-          title: "Success!",
-          description: "Please check your email to confirm your account.",
-        });
+      } else if (data.user) {
+        if (data.user.email_confirmed_at) {
+          toast({
+            title: "Success!",
+            description: "Account created successfully. You are now logged in.",
+          });
+        } else {
+          toast({
+            title: "Check Your Email",
+            description: "Please check your email and click the confirmation link to complete your account setup.",
+          });
+        }
       }
     } catch (error) {
+      console.error('Signup error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred during signup",
@@ -107,26 +122,30 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('Login error:', error);
+        
         if (error.message.includes('Invalid login credentials')) {
           // Check if user exists in enrollments but not in auth
           const { data: enrollment } = await supabase
             .from('enrollments')
             .select('email, full_name')
             .eq('email', email)
-            .single();
+            .maybeSingle();
 
           if (enrollment) {
             toast({
-              title: "Account Not Activated",
-              description: "Your enrollment was received but your account hasn't been activated yet. Please contact our admin team or try creating an account if signups are enabled.",
+              title: "Account Not Created",
+              description: "You've completed enrollment but haven't created an account yet. Please use the 'Create Account' option below.",
               variant: "destructive",
             });
+            setIsLogin(false);
+            setFullName(enrollment.full_name);
           } else {
             toast({
               title: "Invalid Credentials",
@@ -134,16 +153,27 @@ const Auth = () => {
               variant: "destructive",
             });
           }
+        } else if (error.message.includes('Email not confirmed')) {
+          toast({
+            title: "Email Not Confirmed",
+            description: "Please check your email and click the confirmation link to activate your account.",
+            variant: "destructive",
+          });
         } else {
-          throw error;
+          toast({
+            title: "Login Error",
+            description: error.message,
+            variant: "destructive",
+          });
         }
-      } else {
+      } else if (data.user) {
         toast({
           title: "Success!",
           description: "You have been signed in successfully.",
         });
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred during login",
@@ -162,7 +192,10 @@ const Auth = () => {
             {isLogin ? 'Sign In' : 'Create Account'}
           </CardTitle>
           <p className="text-slate-300">
-            {isLogin ? 'Welcome back to Atharva Computer Institute' : 'Complete your enrollment by creating an account'}
+            {isLogin 
+              ? 'Welcome back to Atharva Computer Institute' 
+              : 'Create your account to start learning'
+            }
           </p>
         </CardHeader>
         <CardContent>
@@ -185,6 +218,7 @@ const Auth = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="bg-slate-700 border-slate-600 text-white"
+                  placeholder="Enter your full name"
                   required
                 />
               </div>
@@ -199,6 +233,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Enter your email"
                 required
               />
             </div>
@@ -212,6 +247,7 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Enter your password"
                 required
                 minLength={6}
               />
@@ -228,8 +264,12 @@ const Auth = () => {
           
           <div className="mt-4 text-center">
             <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-blue-400 hover:text-blue-300 text-sm"
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setFullName('');
+                setPassword('');
+              }}
+              className="text-blue-400 hover:text-blue-300 text-sm underline"
             >
               {isLogin 
                 ? "Need to create an account? Sign up" 
