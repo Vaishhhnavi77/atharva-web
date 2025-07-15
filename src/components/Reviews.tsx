@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,18 +81,45 @@ const Reviews = () => {
     setSubmitting(true);
 
     try {
-      // Get user profile for full name
+      // Get user's full name from multiple sources
+      let fullName = 'User';
+
+      // First try to get from profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('id', user.id)
         .single();
 
+      if (profile?.full_name) {
+        fullName = profile.full_name;
+      } else {
+        // If no profile, try from user metadata
+        if (user.user_metadata?.full_name) {
+          fullName = user.user_metadata.full_name;
+        } else {
+          // Last resort: try from enrollments table using email
+          const { data: enrollment } = await supabase
+            .from('enrollments')
+            .select('full_name')
+            .eq('email', user.email)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (enrollment?.full_name) {
+            fullName = enrollment.full_name;
+          }
+        }
+      }
+
+      console.log('Using full name for review:', fullName);
+
       const { error } = await supabase
         .from('reviews')
         .insert([{
           user_id: user.id,
-          full_name: profile?.full_name || 'Anonymous',
+          full_name: fullName,
           course: newReview.course,
           rating: newReview.rating,
           review_text: newReview.review_text

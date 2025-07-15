@@ -1,4 +1,3 @@
-
 import { Phone, Mail, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -153,6 +152,25 @@ const Contact = () => {
 
       if (authError) {
         throw authError;
+      }
+
+      console.log('Auth user created:', authData);
+
+      // Ensure profile is created with full_name
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            full_name: formData.fullName,
+            email: formData.email
+          });
+
+        if (profileError) {
+          console.error('Profile creation error (non-blocking):', profileError);
+        } else {
+          console.log('Profile created successfully with full_name:', formData.fullName);
+        }
       }
 
       // Then insert enrollment data
