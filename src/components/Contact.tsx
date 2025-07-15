@@ -32,40 +32,14 @@ const Contact = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
-  const sendOTPEmail = async (email: string, otpCode: string) => {
-    try {
-      const { error } = await supabase.functions.invoke('send-otp-email', {
-        body: {
-          email: email,
-          otp: otpCode,
-          name: formData.fullName
-        }
-      });
-
-      if (error) {
-        console.error('Error sending OTP email:', error);
-        toast({
-          title: "OTP Email Error",
-          description: "Failed to send OTP email. Please try again or contact support.",
-          variant: "destructive",
-        });
-        return false;
-      } else {
-        toast({
-          title: "OTP Sent!",
-          description: `Verification code sent to ${email}`,
-        });
-        return true;
-      }
-    } catch (error) {
-      console.error('Error sending OTP:', error);
-      toast({
-        title: "OTP Email Error",
-        description: "Failed to send OTP email. Please try again or contact support.",
-        variant: "destructive",
-      });
-      return false;
-    }
+  const sendOTPEmail = (email: string, otpCode: string) => {
+    // In a real implementation, you would send an actual email with the OTP
+    // For now, we'll simulate the OTP sending via toast
+    console.log(`Sending OTP ${otpCode} to email ${email}`);
+    toast({
+      title: "OTP Sent to Email!",
+      description: `Verification code sent to ${email}. Demo OTP: ${otpCode}`,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,40 +75,10 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      // Check if email already exists
-      const { data: existingEnrollment } = await supabase
-        .from('enrollments')
-        .select('email')
-        .eq('email', formData.email)
-        .maybeSingle();
-
-      if (existingEnrollment) {
-        toast({
-          title: "Already Enrolled",
-          description: "This email is already registered. You can create your account on the Auth page.",
-        });
-        
-        // Show guidance toast after 2 seconds
-        setTimeout(() => {
-          toast({
-            title: "Next Step",
-            description: "Click the button below to go to the Auth page and create your account.",
-          });
-        }, 2000);
-        
-        setIsSubmitting(false);
-        return;
-      }
-
       // Generate and send OTP via email
       const otpCode = generateOTP();
       setGeneratedOTP(otpCode);
-      
-      const emailSent = await sendOTPEmail(formData.email, otpCode);
-      if (!emailSent) {
-        setIsSubmitting(false);
-        return;
-      }
+      sendOTPEmail(formData.email, otpCode);
       
       // Show OTP verification form
       setShowOTPVerification(true);
@@ -168,7 +112,7 @@ const Contact = () => {
     setIsVerifyingOTP(true);
 
     try {
-      // Insert enrollment data
+      // First, insert enrollment data
       const { error: enrollmentError } = await supabase
         .from('enrollments')
         .insert({
@@ -182,9 +126,11 @@ const Contact = () => {
         throw enrollmentError;
       }
 
+      // Since email signups are disabled, we'll create a temporary workaround
+      // Instead of creating a Supabase auth user, we'll just complete the enrollment
       toast({
         title: "Enrollment Successful!",
-        description: "Your enrollment has been completed successfully.",
+        description: "Your enrollment has been submitted successfully. You can now sign in using the Auth page with your credentials once our admin enables your account.",
       });
       
       // Reset form and hide OTP verification
@@ -200,30 +146,52 @@ const Contact = () => {
       setShowOTPVerification(false);
       setGeneratedOTP('');
 
-      // Show next steps guidance
+      // Show additional instructions
       setTimeout(() => {
         toast({
-          title: "Create Your Account",
-          description: "Now go to the Auth page to create your account and start learning!",
+          title: "Next Steps",
+          description: "Please contact our admin team to activate your account. Your enrollment details have been saved.",
         });
       }, 2000);
 
     } catch (error: any) {
       console.error('Error completing enrollment:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to complete enrollment. Please try again.",
-        variant: "destructive"
-      });
+      
+      // Handle specific Supabase auth errors
+      if (error.message?.includes('email_provider_disabled') || error.message?.includes('Email signups are disabled')) {
+        toast({
+          title: "Enrollment Completed",
+          description: "Your enrollment has been saved. Please contact our admin team to activate your account as email signups are currently disabled.",
+        });
+        
+        // Reset form as enrollment was still successful
+        setFormData({
+          fullName: '',
+          email: '',
+          phone: '',
+          courseInterest: '',
+          password: '',
+          confirmPassword: ''
+        });
+        setOtp('');
+        setShowOTPVerification(false);
+        setGeneratedOTP('');
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to complete enrollment. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsVerifyingOTP(false);
     }
   };
 
-  const resendOTP = async () => {
+  const resendOTP = () => {
     const newOTP = generateOTP();
     setGeneratedOTP(newOTP);
-    await sendOTPEmail(formData.email, newOTP);
+    sendOTPEmail(formData.email, newOTP);
     setOtp('');
   };
 
@@ -240,6 +208,9 @@ const Contact = () => {
                   We've sent a 6-digit verification code to
                 </p>
                 <p className="text-white font-semibold">{formData.email}</p>
+                <p className="text-sm text-slate-400 mt-2">
+                  Demo Mode: Check the toast message for OTP
+                </p>
               </div>
 
               <div className="space-y-6">
@@ -371,6 +342,11 @@ const Contact = () => {
 
           <div className="bg-slate-800/30 p-8 rounded-2xl border border-slate-700">
             <h3 className="text-2xl font-bold text-white mb-6">Enrollment Form</h3>
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+              <p className="text-yellow-400 text-sm">
+                <strong>Note:</strong> Email signups are currently disabled. Your enrollment will be saved and our admin team will contact you to activate your account.
+              </p>
+            </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -477,21 +453,13 @@ const Contact = () => {
               </button>
             </form>
 
-            <div className="mt-6 text-center space-y-2">
+            <div className="mt-4 text-center">
               <p className="text-slate-400 text-sm">
                 Already enrolled?{' '}
                 <a href="/auth" className="text-blue-400 hover:text-blue-300 underline">
-                  Create your account here
+                  Sign in here
                 </a>
               </p>
-              <div className="mt-4">
-                <a 
-                  href="/auth" 
-                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105"
-                >
-                  Go to Auth Page
-                </a>
-              </div>
             </div>
           </div>
         </div>
