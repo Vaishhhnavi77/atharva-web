@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,6 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
@@ -36,39 +34,6 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: fullName,
-          }
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success!",
-        description: "Please check your email to confirm your account.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -86,9 +51,10 @@ const Auth = () => {
         description: "You have been signed in successfully.",
       });
     } catch (error) {
+      console.error('Login error:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        title: "Login Error",
+        description: error instanceof Error ? error.message : "Failed to sign in",
         variant: "destructive",
       });
     } finally {
@@ -101,29 +67,14 @@ const Auth = () => {
       <Card className="w-full max-w-md bg-slate-800/50 border-slate-700">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl text-white">
-            {isLogin ? 'Sign In' : 'Sign Up'}
+            Sign In to Your Account
           </CardTitle>
           <p className="text-slate-300">
-            {isLogin ? 'Welcome back to Atharva Computer Institute' : 'Join Atharva Computer Institute'}
+            Welcome back to Atharva Computer Institute
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={isLogin ? handleSignIn : handleSignUp} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Full Name
-                </label>
-                <Input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="bg-slate-700 border-slate-600 text-white"
-                  required
-                />
-              </div>
-            )}
-            
+          <form onSubmit={handleSignIn} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Email
@@ -133,6 +84,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Enter your email"
                 required
               />
             </div>
@@ -146,6 +98,7 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-slate-700 border-slate-600 text-white"
+                placeholder="Enter your password"
                 required
               />
             </div>
@@ -155,20 +108,25 @@ const Auth = () => {
               disabled={loading}
               className="w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white hover:from-blue-600 hover:to-teal-600"
             >
-              {loading ? 'Loading...' : (isLogin ? 'Sign In' : 'Sign Up')}
+              {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
           
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-blue-400 hover:text-blue-300 text-sm"
-            >
-              {isLogin 
-                ? "Don't have an account? Sign up" 
-                : "Already have an account? Sign in"
-              }
-            </button>
+          <div className="mt-6 text-center">
+            <div className="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
+              <p className="text-slate-300 text-sm mb-2">
+                Don't have an account yet?
+              </p>
+              <p className="text-slate-400 text-xs mb-3">
+                Create your account by filling out the enrollment form on our homepage.
+              </p>
+              <a 
+                href="/#contact" 
+                className="inline-block bg-gradient-to-r from-teal-500 to-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:from-teal-600 hover:to-blue-600 transition-all duration-300"
+              >
+                Go to Enrollment Form
+              </a>
+            </div>
           </div>
         </CardContent>
       </Card>

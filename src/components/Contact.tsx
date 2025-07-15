@@ -139,7 +139,23 @@ const Contact = () => {
     setIsVerifyingOTP(true);
 
     try {
-      // First, insert enrollment data
+      // First, create the Supabase auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: formData.fullName,
+          }
+        }
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      // Then insert enrollment data
       const { error: enrollmentError } = await supabase
         .from('enrollments')
         .insert({
@@ -150,14 +166,13 @@ const Contact = () => {
         });
 
       if (enrollmentError) {
-        throw enrollmentError;
+        console.error('Enrollment error (non-blocking):', enrollmentError);
+        // Don't throw here - auth user creation is more important
       }
 
-      // Since email signups are disabled, we'll create a temporary workaround
-      // Instead of creating a Supabase auth user, we'll just complete the enrollment
       toast({
-        title: "Enrollment Successful!",
-        description: "Your enrollment has been submitted successfully. You can now sign in using the Auth page with your credentials once our admin enables your account.",
+        title: "Account Created Successfully!",
+        description: "You can now sign in with your email and password on the Auth page.",
       });
       
       // Reset form and hide OTP verification
@@ -173,43 +188,22 @@ const Contact = () => {
       setShowOTPVerification(false);
       setGeneratedOTP('');
 
-      // Show additional instructions
+      // Show success message and redirect info
       setTimeout(() => {
         toast({
-          title: "Next Steps",
-          description: "Please contact our admin team to activate your account. Your enrollment details have been saved.",
+          title: "Ready to Login!",
+          description: "Your account is ready. You can now sign in using the same email and password.",
         });
       }, 2000);
 
     } catch (error: any) {
       console.error('Error completing enrollment:', error);
       
-      // Handle specific Supabase auth errors
-      if (error.message?.includes('email_provider_disabled') || error.message?.includes('Email signups are disabled')) {
-        toast({
-          title: "Enrollment Completed",
-          description: "Your enrollment has been saved. Please contact our admin team to activate your account as email signups are currently disabled.",
-        });
-        
-        // Reset form as enrollment was still successful
-        setFormData({
-          fullName: '',
-          email: '',
-          phone: '',
-          courseInterest: '',
-          password: '',
-          confirmPassword: ''
-        });
-        setOtp('');
-        setShowOTPVerification(false);
-        setGeneratedOTP('');
-      } else {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to complete enrollment. Please try again.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create account. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsVerifyingOTP(false);
     }
@@ -260,7 +254,7 @@ const Contact = () => {
                   disabled={otp.length !== 6 || isVerifyingOTP}
                   className="w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isVerifyingOTP ? 'Verifying...' : 'Verify & Complete Enrollment'}
+                  {isVerifyingOTP ? 'Creating Account...' : 'Verify & Create Account'}
                 </button>
 
                 <div className="text-center">
@@ -365,7 +359,7 @@ const Contact = () => {
           </div>
 
           <div className="bg-slate-800/30 p-8 rounded-2xl border border-slate-700">
-            <h3 className="text-2xl font-bold text-white mb-6">Enrollment Form</h3>
+            <h3 className="text-2xl font-bold text-white mb-6">Create Your Account</h3>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -468,13 +462,13 @@ const Contact = () => {
                 disabled={isSubmitting}
                 className="w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Processing...' : 'Submit Enrollment'}
+                {isSubmitting ? 'Processing...' : 'Create Account & Enroll'}
               </button>
             </form>
 
             <div className="mt-4 text-center">
               <p className="text-slate-400 text-sm">
-                Already enrolled?{' '}
+                Already have an account?{' '}
                 <a href="/auth" className="text-blue-400 hover:text-blue-300 underline">
                   Sign in here
                 </a>
