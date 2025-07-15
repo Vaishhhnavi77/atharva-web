@@ -3,8 +3,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-export default defineConfig(({ command }) => ({
-  base: command === "build" ? "/atharva-web/" : "/",
+export default defineConfig({
+  base: "/",
 
   server: {
     host: "::",
@@ -19,4 +19,4 @@ export default defineConfig(({ command }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+});
