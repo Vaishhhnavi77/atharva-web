@@ -1,4 +1,3 @@
-
 import { Phone, Mail, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,7 +34,6 @@ const Contact = () => {
 
   const sendOTPEmail = async (email: string, otpCode: string) => {
     try {
-      // Call Supabase Edge Function to send email
       const { error } = await supabase.functions.invoke('send-otp-email', {
         body: {
           email: email,
@@ -46,8 +44,6 @@ const Contact = () => {
 
       if (error) {
         console.error('Error sending OTP email:', error);
-        // Fallback to console log for now
-        console.log(`OTP for ${email}: ${otpCode}`);
         toast({
           title: "OTP Generated",
           description: `Verification code generated. Check console for OTP: ${otpCode}`,
@@ -60,8 +56,6 @@ const Contact = () => {
       }
     } catch (error) {
       console.error('Error sending OTP:', error);
-      // Fallback - log OTP to console
-      console.log(`OTP for ${email}: ${otpCode}`);
       toast({
         title: "OTP Generated",
         description: `Verification code generated. Check console for OTP: ${otpCode}`,
@@ -102,6 +96,22 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
+      // Check if email already exists
+      const { data: existingEnrollment } = await supabase
+        .from('enrollments')
+        .select('email')
+        .eq('email', formData.email)
+        .single();
+
+      if (existingEnrollment) {
+        toast({
+          title: "Already Enrolled",
+          description: "This email is already registered. You can now sign in using the Auth page.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       // Generate and send OTP via email
       const otpCode = generateOTP();
       setGeneratedOTP(otpCode);
@@ -139,7 +149,7 @@ const Contact = () => {
     setIsVerifyingOTP(true);
 
     try {
-      // First, insert enrollment data
+      // Insert enrollment data
       const { error: enrollmentError } = await supabase
         .from('enrollments')
         .insert({
@@ -153,11 +163,9 @@ const Contact = () => {
         throw enrollmentError;
       }
 
-      // Since email signups are disabled, we'll create a temporary workaround
-      // Instead of creating a Supabase auth user, we'll just complete the enrollment
       toast({
         title: "Enrollment Successful!",
-        description: "Your enrollment has been submitted successfully. You can now sign in using the Auth page with your credentials once our admin enables your account.",
+        description: "Your enrollment has been completed successfully. You can now create an account on the Auth page.",
       });
       
       // Reset form and hide OTP verification
@@ -177,39 +185,17 @@ const Contact = () => {
       setTimeout(() => {
         toast({
           title: "Next Steps",
-          description: "Please contact our admin team to activate your account. Your enrollment details have been saved.",
+          description: "Visit the Auth page to create your account and start learning!",
         });
       }, 2000);
 
     } catch (error: any) {
       console.error('Error completing enrollment:', error);
-      
-      // Handle specific Supabase auth errors
-      if (error.message?.includes('email_provider_disabled') || error.message?.includes('Email signups are disabled')) {
-        toast({
-          title: "Enrollment Completed",
-          description: "Your enrollment has been saved. Please contact our admin team to activate your account as email signups are currently disabled.",
-        });
-        
-        // Reset form as enrollment was still successful
-        setFormData({
-          fullName: '',
-          email: '',
-          phone: '',
-          courseInterest: '',
-          password: '',
-          confirmPassword: ''
-        });
-        setOtp('');
-        setShowOTPVerification(false);
-        setGeneratedOTP('');
-      } else {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to complete enrollment. Please try again.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to complete enrollment. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsVerifyingOTP(false);
     }
