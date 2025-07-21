@@ -52,7 +52,7 @@ const Courses = () => {
     },
     {
       title: "CCSS",
-      description: "Maharashtra State Certificate in Information Technology",
+      description: "Certificate Course In Sanganak Suvidya",
       duration: "3 months",
       features: ["Computer Basics", "MS Office (Word, Excel, PowerPoint)", "HTML Fundamentals", "Internet & Email", "Tally Basics", "Digital Literacy", "Government Certification", "Practical Training"]
     },

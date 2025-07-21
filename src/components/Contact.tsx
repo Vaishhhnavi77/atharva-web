@@ -339,7 +339,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className="text-white font-semibold">Email</h4>
-                    <p className="text-slate-300">sheelawaghule@gmail.com</p>
+                    <p className="text-slate-300">atharvacomputersbhosari@gmail.com</p>
                   </div>
                 </div>
 
@@ -349,7 +349,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className="text-white font-semibold">Address</h4>
-                    <p className="text-slate-300">Sandwik Colony-Bhosari, Pune 411039, Maharashtra</p>
+                    <p className="text-slate-300">Opp.Sandwik Colony Dighi road, Bhosari, Pune 411039</p>
                   </div>
                 </div>
               </div>
