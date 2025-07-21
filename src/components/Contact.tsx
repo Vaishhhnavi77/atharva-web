@@ -2,7 +2,6 @@ import { Phone, Mail, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -14,10 +13,6 @@ const Contact = () => {
     confirmPassword: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showOTPVerification, setShowOTPVerification] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [generatedOTP, setGeneratedOTP] = useState('');
-  const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
   const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -26,46 +21,6 @@ const Contact = () => {
       ...prev,
       [name]: value
     }));
-  };
-
-  const generateOTP = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
-
-  const sendOTPEmail = async (email: string, otpCode: string) => {
-    try {
-      // Call Supabase Edge Function to send email
-      const { error } = await supabase.functions.invoke('send-otp-email', {
-        body: {
-          email: email,
-          otp: otpCode,
-          name: formData.fullName
-        }
-      });
-
-      if (error) {
-        console.error('Error sending OTP email:', error);
-        // Fallback to console log for now
-        console.log(`OTP for ${email}: ${otpCode}`);
-        toast({
-          title: "OTP Generated",
-          description: `Verification code generated. Check console for OTP: ${otpCode}`,
-        });
-      } else {
-        toast({
-          title: "OTP Sent!",
-          description: `Verification code sent to ${email}`,
-        });
-      }
-    } catch (error) {
-      console.error('Error sending OTP:', error);
-      // Fallback - log OTP to console
-      console.log(`OTP for ${email}: ${otpCode}`);
-      toast({
-        title: "OTP Generated",
-        description: `Verification code generated. Check console for OTP: ${otpCode}`,
-      });
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,43 +54,6 @@ const Contact = () => {
     }
 
     setIsSubmitting(true);
-
-    try {
-      // Generate and send OTP via email
-      const otpCode = generateOTP();
-      setGeneratedOTP(otpCode);
-      await sendOTPEmail(formData.email, otpCode);
-      
-      // Show OTP verification form
-      setShowOTPVerification(true);
-      
-      toast({
-        title: "Email Verification Required",
-        description: "Please enter the OTP sent to your email address",
-      });
-    } catch (error) {
-      console.error('Error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process enrollment. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleOTPVerification = async () => {
-    if (otp !== generatedOTP) {
-      toast({
-        title: "Error",
-        description: "Invalid OTP. Please try again.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsVerifyingOTP(true);
 
     try {
       // First, insert enrollment data
@@ -195,7 +113,7 @@ const Contact = () => {
         description: "You can now sign in with your email and password on the Auth page.",
       });
       
-      // Reset form and hide OTP verification
+      // Reset form
       setFormData({
         fullName: '',
         email: '',
@@ -204,9 +122,6 @@ const Contact = () => {
         password: '',
         confirmPassword: ''
       });
-      setOtp('');
-      setShowOTPVerification(false);
-      setGeneratedOTP('');
 
       // Show success message and redirect info
       setTimeout(() => {
@@ -225,82 +140,9 @@ const Contact = () => {
         variant: "destructive"
       });
     } finally {
-      setIsVerifyingOTP(false);
+      setIsSubmitting(false);
     }
   };
-
-  const resendOTP = async () => {
-    const newOTP = generateOTP();
-    setGeneratedOTP(newOTP);
-    await sendOTPEmail(formData.email, newOTP);
-    setOtp('');
-  };
-
-  if (showOTPVerification) {
-    return (
-      <section id="contact" className="py-20 bg-slate-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md mx-auto">
-            <div className="bg-slate-800/30 p-8 rounded-2xl border border-slate-700">
-              <h3 className="text-2xl font-bold text-white mb-6 text-center">Verify Email Address</h3>
-              
-              <div className="text-center mb-6">
-                <p className="text-slate-300 mb-4">
-                  We've sent a 6-digit verification code to
-                </p>
-                <p className="text-white font-semibold">{formData.email}</p>
-              </div>
-
-              <div className="space-y-6">
-                <div className="flex justify-center">
-                  <InputOTP
-                    maxLength={6}
-                    value={otp}
-                    onChange={(value) => setOtp(value)}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-
-                <button
-                  onClick={handleOTPVerification}
-                  disabled={otp.length !== 6 || isVerifyingOTP}
-                  className="w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isVerifyingOTP ? 'Creating Account...' : 'Verify & Create Account'}
-                </button>
-
-                <div className="text-center">
-                  <button
-                    onClick={resendOTP}
-                    className="text-blue-400 hover:text-blue-300 text-sm underline"
-                  >
-                    Resend OTP
-                  </button>
-                </div>
-
-                <div className="text-center">
-                  <button
-                    onClick={() => setShowOTPVerification(false)}
-                    className="text-slate-400 hover:text-slate-300 text-sm"
-                  >
-                    Back to form
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section id="contact" className="py-20 bg-slate-900/50">
