@@ -148,21 +148,21 @@ const Contact = () => {
     <section id="contact" className="py-20 bg-slate-900/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6 px-4">
             Contact{' '}
             <span className="bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
               Us
             </span>
           </h2>
-          <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-3xl mx-auto px-4">
             Ready to start your learning journey? Get in touch with us today!
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start lg:items-center">
           <div className="space-y-8">
-            <div className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700">
-              <h3 className="text-2xl font-bold text-white mb-6">Get Started Today</h3>
+            <div className="bg-slate-800/50 p-4 sm:p-6 lg:p-8 rounded-2xl border border-slate-700">
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-6">Get Started Today</h3>
               
               <div className="space-y-6">
                 <div className="flex items-center space-x-4">
@@ -220,8 +220,8 @@ const Contact = () => {
             </div>
           </div>
 
-          <div className="bg-slate-800/30 p-8 rounded-2xl border border-slate-700">
-            <h3 className="text-2xl font-bold text-white mb-6">Create Your Account</h3>
+          <div className="bg-slate-800/30 p-4 sm:p-6 lg:p-8 rounded-2xl border border-slate-700">
+            <h3 className="text-xl sm:text-2xl font-bold text-white mb-6">Create Your Account</h3>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>

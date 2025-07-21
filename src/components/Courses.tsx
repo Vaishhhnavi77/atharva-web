@@ -74,13 +74,13 @@ const Courses = () => {
     <section id="courses" className="py-24 bg-slate-900/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-20">
-          <h2 className="text-5xl md:text-6xl font-bold text-white mb-8">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8 px-4">
             Our{' '}
             <span className="bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
               Courses
             </span>
           </h2>
-          <p className="text-xl text-slate-300 max-w-4xl mx-auto mb-6">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-4xl mx-auto mb-6 px-4">
             Choose from our comprehensive range of programming and technology courses, all designed to make you industry-ready.
           </p>
           <div className="bg-gradient-to-r from-blue-500/20 to-teal-500/20 p-6 rounded-2xl border border-blue-500/30 max-w-2xl mx-auto">
@@ -93,21 +93,21 @@ const Courses = () => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
           {courses.map((course, index) => (
             <div
               key={course.title}
-              className="group bg-slate-800/50 p-8 rounded-2xl border border-slate-700 hover:border-blue-500/50 transition-all duration-300 hover:transform hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/10"
+              className="group bg-slate-800/50 p-4 sm:p-6 lg:p-8 rounded-2xl border border-slate-700 hover:border-blue-500/50 transition-all duration-300 hover:transform hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/10"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="mb-6">
-                <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors">
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors">
                   {course.title}
                 </h3>
-                <p className="text-slate-300 text-base mb-4">{course.description}</p>
+                <p className="text-slate-300 text-sm sm:text-base mb-4">{course.description}</p>
                 
                 <div className="mb-6">
-                  <span className="text-blue-400 font-semibold text-lg">Duration: {course.duration}</span>
+                  <span className="text-blue-400 font-semibold text-base sm:text-lg">Duration: {course.duration}</span>
                 </div>
               </div>
 

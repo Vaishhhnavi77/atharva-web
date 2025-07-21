@@ -179,13 +179,13 @@ const Reviews = () => {
     <section id="reviews" className="py-24 bg-slate-800/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-20">
-          <h2 className="text-5xl md:text-6xl font-bold text-white mb-8">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8 px-4">
             Student{' '}
             <span className="bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
               Reviews
             </span>
           </h2>
-          <p className="text-xl text-slate-300 max-w-4xl mx-auto mb-10">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-4xl mx-auto mb-10 px-4">
             Read what our students say about their learning experience at Atharva Computer Institute and how our certified courses helped them advance their careers.
           </p>
           
@@ -283,13 +283,13 @@ const Reviews = () => {
         {loading ? (
           <div className="text-center text-slate-300">Loading reviews...</div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
             {reviews.map((review) => (
               <Card
                 key={review.id}
                 className="bg-slate-800/50 border-slate-700 hover:border-blue-500/50 transition-all duration-300 hover:transform hover:scale-105"
               >
-                <CardContent className="p-8">
+                <CardContent className="p-4 sm:p-6 lg:p-8">
                   <div className="flex items-center gap-3 mb-6">
                     {renderStars(review.rating)}
                     <span className="text-base text-slate-400 ml-2">
