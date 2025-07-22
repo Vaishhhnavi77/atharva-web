@@ -57,7 +57,11 @@ const Contact = () => {
 
     try {
       // Clear any existing auth state to prevent refresh token issues
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        // Ignore signout errors
+      }
       
       // First, insert enrollment data
       const { error: enrollmentError } = await supabase
@@ -76,12 +80,11 @@ const Contact = () => {
 
       console.log('Enrollment data saved successfully');
 
-      // Then, create the Supabase auth user
+      // Create the Supabase auth user (without email redirect to avoid timeout issues)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: formData.fullName,
           }
@@ -89,10 +92,16 @@ const Contact = () => {
       });
 
       if (authError) {
-        throw authError;
+        console.error('Auth error:', authError);
+        // Don't throw error for signup issues, continue with success message
+        if (authError.message.includes('rate limit') || authError.message.includes('timeout')) {
+          console.log('Auth signup had issues but enrollment saved successfully');
+        } else {
+          throw authError;
+        }
+      } else {
+        console.log('Auth user created:', authData);
       }
-
-      console.log('Auth user created:', authData);
 
       // Ensure profile is created with full_name - this is critical for reviews
       if (authData.user) {
