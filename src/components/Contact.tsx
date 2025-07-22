@@ -56,6 +56,9 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
+      // Clear any existing auth state to prevent refresh token issues
+      await supabase.auth.signOut();
+      
       // First, insert enrollment data
       const { error: enrollmentError } = await supabase
         .from('enrollments')
