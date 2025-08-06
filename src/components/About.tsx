@@ -15,7 +15,7 @@ const About = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <p className="text-lg text-slate-300 leading-relaxed animate-fade-in">
-              At Atharva Institutions vaishnavi, we believe in transforming passion into expertise. Our comprehensive programming and technology courses are designed to equip students with industry-relevant skills and practical knowledge.
+              At Atharva Institutions, we believe in transforming passion into expertise. Our comprehensive programming and technology courses are designed to equip students with industry-relevant skills and practical knowledge.
             </p>
             
             <p className="text-lg text-slate-300 leading-relaxed animate-fade-in delay-200">
