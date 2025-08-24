@@ -4,9 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+
+import { auth, db } from '../firebase/firebase.ts';
+
+
+
+import {
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  Timestamp
+} from "firebase/firestore";
 
 interface Review {
   id: string;
@@ -14,7 +25,7 @@ interface Review {
   course: string;
   rating: number;
   review_text: string;
-  created_at: string;
+  created_at: Date;
 }
 
 const Reviews = () => {
@@ -22,7 +33,6 @@ const Reviews = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   const [newReview, setNewReview] = useState({
@@ -31,79 +41,28 @@ const Reviews = () => {
     review_text: ''
   });
 
-  // Fetch reviews from database
-  const fetchReviews = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .order('created_at', { ascending: false });
+  const user = auth.currentUser;
+  const isAuthenticated = !!user;
 
-      if (error) throw error;
-      setReviews(data || []);
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load reviews",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // 🔄 Fetch reviews in real time
   useEffect(() => {
-    fetchReviews();
+    const q = query(collection(db, "reviews"), orderBy("created_at", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const reviewsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Review[];
+      setReviews(reviewsData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const getUserFullName = async (): Promise<string> => {
-    if (!user) return 'Anonymous';
-
-    try {
-      // First try to get full name from enrollments table using email
-      const { data: enrollment, error: enrollmentError } = await supabase
-        .from('enrollments')
-        .select('full_name')
-        .eq('email', user.email)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!enrollmentError && enrollment?.full_name) {
-        console.log('Found name from enrollments:', enrollment.full_name);
-        return enrollment.full_name;
-      }
-
-      // Then try from profiles table
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (!profileError && profile?.full_name) {
-        console.log('Found name from profiles:', profile.full_name);
-        return profile.full_name;
-      }
-
-      // Last resort: try from user metadata
-      if (user.user_metadata?.full_name) {
-        console.log('Found name from user metadata:', user.user_metadata.full_name);
-        return user.user_metadata.full_name;
-      }
-
-      console.log('No full name found, using Anonymous');
-      return 'Anonymous';
-    } catch (error) {
-      console.error('Error getting user full name:', error);
-      return 'Anonymous';
-    }
-  };
-
+  // 📝 Submit review
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated || !user) {
       toast({
         title: "Authentication Required",
@@ -125,20 +84,14 @@ const Reviews = () => {
     setSubmitting(true);
 
     try {
-      const fullName = await getUserFullName();
-      console.log('Submitting review with full name:', fullName);
-
-      const { error } = await supabase
-        .from('reviews')
-        .insert([{
-          user_id: user.id,
-          full_name: fullName,
-          course: newReview.course,
-          rating: newReview.rating,
-          review_text: newReview.review_text
-        }]);
-
-      if (error) throw error;
+      await addDoc(collection(db, "reviews"), {
+        user_id: user.uid,
+        full_name: user.displayName || "Anonymous",
+        course: newReview.course,
+        rating: newReview.rating,
+        review_text: newReview.review_text,
+        created_at: Timestamp.now(),
+      });
 
       toast({
         title: "Success!",
@@ -147,11 +100,9 @@ const Reviews = () => {
 
       setNewReview({ course: '', rating: 5, review_text: '' });
       setShowForm(false);
-      
-      // Refresh reviews
-      fetchReviews();
-    } catch (error) {
-      console.error('Error submitting review:', error);
+
+    } catch (error: any) {
+      console.error("Error submitting review:", error);
       toast({
         title: "Error",
         description: "Failed to submit review",
@@ -171,13 +122,17 @@ const Reviews = () => {
     ));
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+  const formatDate = (date: Date) => {
+    return date.toDateString();
   };
 
+
+
+  
   return (
     <section id="reviews" className="py-24 bg-slate-800/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
         <div className="text-center mb-20">
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8 px-4">
             Student{' '}
@@ -188,7 +143,7 @@ const Reviews = () => {
           <p className="text-lg sm:text-xl text-slate-300 max-w-4xl mx-auto mb-10 px-4">
             Read what our students say about their learning experience at Atharva Computer Institute and how our certified courses helped them advance their careers.
           </p>
-          
+
           {isAuthenticated ? (
             <Button
               onClick={() => setShowForm(!showForm)}
@@ -206,6 +161,7 @@ const Reviews = () => {
           )}
         </div>
 
+        {/* Review Form */}
         {showForm && isAuthenticated && (
           <Card className="max-w-3xl mx-auto mb-16 bg-slate-800/50 border-slate-700">
             <CardHeader>
@@ -226,7 +182,7 @@ const Reviews = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-base font-medium text-slate-300 mb-3">
                     Rating
@@ -243,7 +199,7 @@ const Reviews = () => {
                     ))}
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-base font-medium text-slate-300 mb-3">
                     Your Review
@@ -257,7 +213,7 @@ const Reviews = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="flex gap-4">
                   <Button
                     type="submit"
@@ -280,6 +236,7 @@ const Reviews = () => {
           </Card>
         )}
 
+        {/* Reviews List */}
         {loading ? (
           <div className="text-center text-slate-300">Loading reviews...</div>
         ) : (
@@ -293,14 +250,14 @@ const Reviews = () => {
                   <div className="flex items-center gap-3 mb-6">
                     {renderStars(review.rating)}
                     <span className="text-base text-slate-400 ml-2">
-                      {formatDate(review.created_at)}
+                      {review.created_at.toDateString()}
                     </span>
                   </div>
-                  
+
                   <p className="text-slate-300 mb-6 italic text-lg leading-relaxed">
                     "{review.review_text}"
                   </p>
-                  
+
                   <div className="border-t border-slate-700 pt-6">
                     <h4 className="text-white font-semibold text-lg">{review.full_name}</h4>
                     <p className="text-blue-400 text-base">{review.course}</p>
@@ -308,7 +265,7 @@ const Reviews = () => {
                 </CardContent>
               </Card>
             ))}
-            
+
             {reviews.length === 0 && (
               <div className="col-span-full text-center text-slate-300 text-lg">
                 No reviews yet. Be the first to write one!
@@ -317,6 +274,8 @@ const Reviews = () => {
           </div>
         )}
       </div>
+     
+
     </section>
   );
 };

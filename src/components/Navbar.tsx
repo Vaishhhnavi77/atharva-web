@@ -1,68 +1,20 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, User, LogOut } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { auth } from "../firebase/firebase"; 
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [userName, setUserName] = useState<string>('');
-  const { user, signOut, isAuthenticated } = useAuth();
+  const [user, setUser] = useState<any>(null);
 
-  // Get user's full name for display
+  // Track Firebase Auth State
   useEffect(() => {
-    const getUserName = async () => {
-      if (!user) {
-        setUserName('');
-        return;
-      }
-
-      try {
-        // First try to get from enrollments table using email
-        const { data: enrollment } = await supabase
-          .from('enrollments')
-          .select('full_name')
-          .eq('email', user.email)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (enrollment?.full_name) {
-          setUserName(enrollment.full_name);
-          return;
-        }
-
-        // Then try from profiles table
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (profile?.full_name) {
-          setUserName(profile.full_name);
-          return;
-        }
-
-        // Last resort: try from user metadata
-        if (user.user_metadata?.full_name) {
-          setUserName(user.user_metadata.full_name);
-          return;
-        }
-
-        // Fallback to email username
-        setUserName(user.email?.split('@')[0] || 'User');
-      } catch (error) {
-        console.error('Error getting user name:', error);
-        setUserName(user.email?.split('@')[0] || 'User');
-      }
-    };
-
-    if (isAuthenticated) {
-      getUserName();
-    }
-  }, [user, isAuthenticated]);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -125,14 +77,16 @@ const Navbar = () => {
 
           {/* Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
-            {isAuthenticated ? (
+            {user ? (
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2 text-slate-300">
                   <User className="w-4 h-4" />
-                  <span className="text-sm">Welcome, {userName}!</span>
+                  <span className="text-sm">
+                    Welcome, {user.displayName || user.email}
+                  </span>
                 </div>
                 <Button
-                  onClick={signOut}
+                  onClick={() => signOut(auth)}
                   variant="outline"
                   size="sm"
                   className="border-slate-600 text-slate-300 hover:bg-slate-700"
@@ -143,7 +97,7 @@ const Navbar = () => {
               </div>
             ) : (
               <Button
-                onClick={() => window.location.href = '/auth'}
+                onClick={() => (window.location.href = "/auth")}
                 className="bg-gradient-to-r from-blue-500 to-teal-500 text-white hover:from-blue-600 hover:to-teal-600"
               >
                 Sign In
@@ -196,15 +150,15 @@ const Navbar = () => {
               >
                 Contact
               </button>
-              
+
               <div className="border-t border-slate-700 pt-2">
-                {isAuthenticated ? (
+                {user ? (
                   <div className="space-y-2">
                     <div className="px-3 py-2 text-slate-300 text-sm">
-                      Welcome, {userName}!
+                      Welcome, {user.displayName || user.email}
                     </div>
                     <Button
-                      onClick={signOut}
+                      onClick={() => signOut(auth)}
                       variant="outline"
                       size="sm"
                       className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
@@ -216,7 +170,7 @@ const Navbar = () => {
                 ) : (
                   <Button
                     onClick={() => {
-                      window.location.href = '/auth';
+                      window.location.href = "/auth";
                       setIsOpen(false);
                     }}
                     className="w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white hover:from-blue-600 hover:to-teal-600"

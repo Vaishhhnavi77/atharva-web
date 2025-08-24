@@ -1,7 +1,12 @@
 import { Phone, Mail, MapPin } from 'lucide-react';
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useToast } from '@/hooks/use-toast';
+import { auth, db } from "../firebase/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { collection, addDoc, setDoc, doc } from "firebase/firestore";
+
+
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -24,140 +29,116 @@ const Contact = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.courseInterest || !formData.password) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive"
-      });
-      return;
-    }
+  e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive"
-      });
-      return;
-    }
+  if (!formData.fullName || !formData.email || !formData.phone || !formData.courseInterest || !formData.password) {
+    toast({
+      title: "Error",
+      description: "Please fill in all fields",
+      variant: "destructive"
+    });
+    return;
+  }
 
-    if (formData.password.length < 6) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long",
-        variant: "destructive"
-      });
-      return;
-    }
+  if (formData.password !== formData.confirmPassword) {
+    toast({
+      title: "Error",
+      description: "Passwords do not match",
+      variant: "destructive"
+    });
+    return;
+  }
 
-    setIsSubmitting(true);
+  if (formData.password.length < 6) {
+    toast({
+      title: "Error",
+      description: "Password must be at least 6 characters long",
+      variant: "destructive"
+    });
+    return;
+  }
 
-    try {
-      // Clear any existing auth state to prevent refresh token issues
-      try {
-        await supabase.auth.signOut();
-      } catch (err) {
-        // Ignore signout errors
-      }
-      
-      // First, insert enrollment data
-      const { error: enrollmentError } = await supabase
-        .from('enrollments')
-        .insert({
-          full_name: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
-          course_interest: formData.courseInterest
-        });
+  setIsSubmitting(true);
 
-      if (enrollmentError) {
-        console.error('Enrollment error:', enrollmentError);
-        throw new Error('Failed to save enrollment data');
-      }
+  try {
+    // 1. Create Firebase Auth user
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      formData.email,
+      formData.password
+    );
+    const user = userCredential.user;
 
-      console.log('Enrollment data saved successfully');
+    // 2. Save enrollment data
+    await addDoc(collection(db, "enrollments"), {
+      full_name: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      course_interest: formData.courseInterest,
+      created_at: new Date()
+    });
 
-      // Create the Supabase auth user (without email redirect to avoid timeout issues)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-          }
-        }
-      });
+    // 3. Save profile
+    await setDoc(doc(db, "profiles", user.uid), {
+      full_name: formData.fullName,
+      email: formData.email,
+      created_at: new Date()
+    });
 
-      if (authError) {
-        console.error('Auth error:', authError);
-        // Don't throw error for signup issues, continue with success message
-        if (authError.message.includes('rate limit') || authError.message.includes('timeout')) {
-          console.log('Auth signup had issues but enrollment saved successfully');
-        } else {
-          throw authError;
-        }
-      } else {
-        console.log('Auth user created:', authData);
-      }
+    toast({
+      title: "Account Created Successfully!",
+      description: "You can now log in with your email and password.",
+    });
 
-      // Ensure profile is created with full_name - this is critical for reviews
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: authData.user.id,
-            full_name: formData.fullName,
-            email: formData.email
-          });
+    setFormData({
+      fullName: "",
+      email: "",
+      phone: "",
+      courseInterest: "",
+      password: "",
+      confirmPassword: ""
+    });
 
-        if (profileError) {
-          console.error('Profile creation error (non-blocking):', profileError);
-        } else {
-          console.log('Profile created successfully with full_name:', formData.fullName);
-        }
-      }
+  } catch (error: any) {
+    console.error("Firebase error:", error);
+    toast({
+      title: "Error",
+      description: error.message,
+      variant: "destructive"
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
-      toast({
-        title: "Account Created Successfully!",
-        description: "You can now sign in with your email and password on the Auth page.",
-      });
-      
-      // Reset form
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        courseInterest: '',
-        password: '',
-        confirmPassword: ''
-      });
 
-      // Show success message and redirect info
-      setTimeout(() => {
-        toast({
-          title: "Ready to Login!",
-          description: "Your account is ready. You can now sign in using the same email and password.",
-        });
-      }, 2000);
 
-    } catch (error: any) {
-      console.error('Error completing enrollment:', error);
-      
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create account. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+
+
+async function handleAddTest() {
+  try {
+    await addDoc(collection(db, "testCollection"), {
+      name: "Vaishnavi",
+      createdAt: new Date(),
+    });
+    console.log("Test document added!");
+  } catch (err) {
+    console.error("Error:", err);
+  }
+}
+
+
+
+
+
+
 
   return (
     <section id="contact" className="py-20 bg-slate-900/50">
+
+
+      <button onClick={handleAddTest}>Add Test</button>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6 px-4">
