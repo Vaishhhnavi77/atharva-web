@@ -1,14 +1,8 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from "firebase/firestore"; // ✅ Firestore
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyDg27TmgN5rmSaj_O9out89uN0fYAzoRSY",
   authDomain: "atharva-32d64.firebaseapp.com",
@@ -19,23 +13,13 @@ const firebaseConfig = {
   measurementId: "G-QLKX2S8CVB"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-// Initialize and export auth and db
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+// ✅ Initialize Firestore
+const db = getFirestore(app);
 
-export default function signup (email ,password){
-  return createUserWithEmailAndPassword(auth , email , password);
-}
-
-export function login(email, password) {
-  return signInWithEmailAndPassword(auth, email, password);
-}
-
-
-export function logout() {
-  return signOut(auth);
-}
+// ✅ Export everything you need
+export { auth, provider, db };

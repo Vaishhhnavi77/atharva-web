@@ -1,12 +1,9 @@
 import { Phone, Mail, MapPin } from 'lucide-react';
 import { useState } from 'react';
-
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from "../firebase/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { collection, addDoc, setDoc, doc } from "firebase/firestore";
-
-
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -29,116 +26,101 @@ const Contact = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!formData.fullName || !formData.email || !formData.phone || !formData.courseInterest || !formData.password) {
-    toast({
-      title: "Error",
-      description: "Please fill in all fields",
-      variant: "destructive"
-    });
-    return;
-  }
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.courseInterest || !formData.password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  if (formData.password !== formData.confirmPassword) {
-    toast({
-      title: "Error",
-      description: "Passwords do not match",
-      variant: "destructive"
-    });
-    return;
-  }
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  if (formData.password.length < 6) {
-    toast({
-      title: "Error",
-      description: "Password must be at least 6 characters long",
-      variant: "destructive"
-    });
-    return;
-  }
+    if (formData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  setIsSubmitting(true);
+    setIsSubmitting(true);
 
-  try {
-    // 1. Create Firebase Auth user
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      formData.email,
-      formData.password
-    );
-    const user = userCredential.user;
+    try {
+      // Create Firebase Auth user
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
 
-    // 2. Save enrollment data
-    await addDoc(collection(db, "enrollments"), {
-      full_name: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      course_interest: formData.courseInterest,
-      created_at: new Date()
-    });
+      // Save enrollment data
+      await addDoc(collection(db, "enrollments"), {
+        full_name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        course_interest: formData.courseInterest,
+        created_at: new Date()
+      });
 
-    // 3. Save profile
-    await setDoc(doc(db, "profiles", user.uid), {
-      full_name: formData.fullName,
-      email: formData.email,
-      created_at: new Date()
-    });
+      // Save profile
+      await setDoc(doc(db, "profiles", user.uid), {
+        full_name: formData.fullName,
+        email: formData.email,
+        created_at: new Date()
+      });
 
-    toast({
-      title: "Account Created Successfully!",
-      description: "You can now log in with your email and password.",
-    });
+      toast({
+        title: "Account Created Successfully!",
+        description: "You can now log in with your email and password.",
+      });
 
-    setFormData({
-      fullName: "",
-      email: "",
-      phone: "",
-      courseInterest: "",
-      password: "",
-      confirmPassword: ""
-    });
+      setFormData({
+        fullName: "",
+        email: "",
+        phone: "",
+        courseInterest: "",
+        password: "",
+        confirmPassword: ""
+      });
 
-  } catch (error: any) {
-    console.error("Firebase error:", error);
-    toast({
-      title: "Error",
-      description: error.message,
-      variant: "destructive"
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+    } catch (error: any) {
+      console.error("Firebase error:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-
-
-
-
-async function handleAddTest() {
-  try {
-    await addDoc(collection(db, "testCollection"), {
-      name: "Vaishnavi",
-      createdAt: new Date(),
-    });
-    console.log("Test document added!");
-  } catch (err) {
-    console.error("Error:", err);
-  }
-}
-
-
-
-
-
-
+  // Test function to add a dummy doc
+  const handleAddTest = async () => {
+    try {
+      await addDoc(collection(db, "testCollection"), {
+        name: "Vaishnavi",
+        createdAt: new Date(),
+      });
+      console.log("Test document added!");
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  };
 
   return (
     <section id="contact" className="py-20 bg-slate-900/50">
-
-
-      <button onClick={handleAddTest}>Add Test</button>
-
+      {/* Test Button */}
+     
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6 px-4">
@@ -153,10 +135,11 @@ async function handleAddTest() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start lg:items-center">
+          {/* Left side: Contact info + Why choose us */}
           <div className="space-y-8">
             <div className="bg-slate-800/50 p-4 sm:p-6 lg:p-8 rounded-2xl border border-slate-700">
               <h3 className="text-xl sm:text-2xl font-bold text-white mb-6">Get Started Today</h3>
-              
+
               <div className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
@@ -167,7 +150,7 @@ async function handleAddTest() {
                     <p className="text-slate-300">+91 82082 67009</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center">
                     <Mail className="text-white" size={20} />
@@ -184,7 +167,9 @@ async function handleAddTest() {
                   </div>
                   <div>
                     <h4 className="text-white font-semibold">Address</h4>
-                    <p className="text-slate-300">Opp.Sandwik Colony Dighi road, Bhosari, Pune 411039</p>
+                    <p className="text-slate-300">
+                      Opp.Sandwik Colony Dighi road, Bhosari, Pune 411039
+                    </p>
                   </div>
                 </div>
               </div>
@@ -213,9 +198,10 @@ async function handleAddTest() {
             </div>
           </div>
 
+          {/* Right side: Enrollment Form */}
           <div className="bg-slate-800/30 p-4 sm:p-6 lg:p-8 rounded-2xl border border-slate-700">
             <h3 className="text-xl sm:text-2xl font-bold text-white mb-6">Create Your Account</h3>
-            
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-slate-300 mb-2">Full Name</label>
@@ -229,7 +215,7 @@ async function handleAddTest() {
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-slate-300 mb-2">Email</label>
                 <input
@@ -242,7 +228,7 @@ async function handleAddTest() {
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-slate-300 mb-2">Phone Number</label>
                 <input
@@ -255,10 +241,10 @@ async function handleAddTest() {
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-slate-300 mb-2">Course Interest</label>
-                <select 
+                <select
                   name="courseInterest"
                   value={formData.courseInterest}
                   onChange={handleInputChange}
@@ -281,7 +267,7 @@ async function handleAddTest() {
 
               <div className="border-t border-slate-600 pt-6 mt-6">
                 <h4 className="text-lg font-semibold text-white mb-4">Set Your Password</h4>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-slate-300 mb-2">Create Password</label>
@@ -296,7 +282,7 @@ async function handleAddTest() {
                       minLength={6}
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-slate-300 mb-2">Confirm Password</label>
                     <input
@@ -311,7 +297,7 @@ async function handleAddTest() {
                   </div>
                 </div>
               </div>
-              
+
               <button
                 type="submit"
                 disabled={isSubmitting}

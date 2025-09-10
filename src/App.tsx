@@ -6,8 +6,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import Login from "@/components/Login";
-import Logout from "./components/Logout";
+import Navbar from "./components/Navbar";
+import About from "./components/About";
+import Contact from "./components/Contact";
+import Courses from "./components/Courses";
+import Reviews from "./components/Reviews";
+
 
 const queryClient = new QueryClient();
 
@@ -20,10 +24,13 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/logout" element={<Logout />} />
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
+           <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/courses" element={<Courses />} />
+        <Route path="/reviews" element={<Reviews/>}></Route>
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
