@@ -11,6 +11,7 @@ import About from "./components/About";
 import Contact from "./components/Contact";
 import Courses from "./components/Courses";
 import Reviews from "./components/Reviews";
+import ChatBot from "./components/ChatBot";
 
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
         <Route path="/contact" element={<Contact />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/reviews" element={<Reviews/>}></Route>
+        
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

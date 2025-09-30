@@ -8,6 +8,7 @@ import Reviews from "@/components/Reviews";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import { Toaster } from "@/components/ui/toaster";
+import ChatBot from "@/components/ChatBot";
 // import AuthPage from "@/components/AuthPage"; // ✅ No curly braces
 
 
@@ -20,6 +21,7 @@ const Index = () => {
       <About />
       <Courses />
       <Reviews />
+      <ChatBot/>
       <Testimonials />
       <Contact />
       <Footer />

@@ -1,0 +1,60 @@
+
+{
+  "name": "Atharva Computer Institutions",
+  "location": "Bhosari, Pune 411039, Sandwik Colony, Dighi Road",
+  "about": "Atharva Computer Institutions is a professional training institute that offers a wide range of computer and skill development courses to students and professionals. The institute focuses on practical learning with hands-on training.",
+  "courses": [
+    "C Programming",
+    "C++ Programming",
+    "Web Development",
+    "Python Programming",
+    "TALLY ERP9",
+    "English Speaking",
+    "Advance Excel",
+    "MSCIT",
+    "MS Office"
+  ],
+  "website": "https://www.atharvacomputerinstitutebhosari.in/",
+  "developer": {
+    "name": "Vaishnavi Nakhate",
+    "role": "Creator & Developer of the Atharva website",
+    "skills": ["React.js", "React Native", "JavaScript", "Tailwind CSS", "Firebase", "C++", "C"],
+    "github": "https://github.com/Vaishhhnavi77"
+  },
+  "management": {
+    "handled_by": "Sheela Bhujbal",
+    "role": "Head & Administrator of Atharva Computer Institutions",
+    "responsibilities": [
+      "Managing day-to-day operations",
+      "Student admissions",
+      "Ensuring high-quality training"
+    ]
+  },
+  "contact": {
+    "phone": "+91-XXXXXXXXXX",
+    "email": "info@atharvacomputerinstitutebhosari.in",
+    "address": "Sandwik Colony, Dighi Road, Bhosari, Pune 411039"
+  },
+  "faq": [
+    {
+      "question": "Who created the Atharva website?",
+      "answer": "The Atharva Computer Institutions website was created and developed by Vaishnavi Nakhate."
+    },
+    {
+      "question": "Who manages Atharva Computer Institutions?",
+      "answer": "The institute is managed and handled by Sheela Bhujbal."
+    },
+    {
+      "question": "What courses are offered?",
+      "answer": "Courses include C, C++, Python, Web Development, MS Office, MSCIT, Advanced Excel, English Speaking, and TALLY ERP9."
+    },
+    {
+      "question": "Where is Atharva Computer Institutions located?",
+      "answer": "The institute is located at Sandwik Colony, Dighi Road, Bhosari, Pune 411039."
+    },
+    {
+      "question": "What is the main focus of Atharva Computer Institutions?",
+      "answer": "The main focus is practical learning, skill development, and preparing students for industry-ready careers."
+    }
+  ]
+}
