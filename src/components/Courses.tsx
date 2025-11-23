@@ -1,4 +1,5 @@
 
+
 const Courses = () => {
   const scrollToContact = () => {
     const contactSection = document.getElementById('contact');
